@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
 generate_level.py
-Generates an Insane Realism Geometry Dash level featuring:
+Generates an Insane Realism Geometry Dash level (GD 2.2 format) featuring:
 - Atmospheric bioluminescent oceanic artwork & realistic slate/crystal structures
 - Dynamic transitions with camera/screen wipes and speed shifts
 - A massive, fully animated Purple Octopus Boss Fight with multi-stage tentacle attacks and ink blasts
 Outputs:
-- Abyssal_Kraken.gmd (XML Plist GD export format)
+- Abyssal_Kraken.gdlvl (Vanilla GD 2.2 native level export format)
+- Abyssal_Kraken.gmd (GDShare / GD export format)
 - level_string.txt (Raw GD level string)
 """
 
@@ -183,15 +184,6 @@ def build_gd_level():
         add_obj({1: 2, 2: x, 3: 330, 21: 6, 24: 3, 5: 1})
 
     # --- BOSS ARTWORK CONSTRUCTION ---
-    # Boss Base Center Position: X = 5200, Y = 180
-    # Group 10: Octopus Main Mantle / Head & Eyes
-    # Group 11: Tentacle 1 (Top Left)
-    # Group 12: Tentacle 2 (Bottom Left)
-    # Group 13: Tentacle 3 (Top Right)
-    # Group 14: Tentacle 4 (Bottom Right)
-    # Group 15: Boss Eyes
-    # Group 16: Ink Blast Cannon
-
     boss_x = 5200
     boss_y = 180
 
@@ -213,7 +205,6 @@ def build_gd_level():
     add_obj({1: 1, 2: boss_x + 30, 3: boss_y + 20, 21: 8, 24: 9, 32: 0.4, 57: "10.15"}) # Pupil
 
     # 3. Tentacle 1 - Top Left (Group 11)
-    # Jointed tentacle extending upwards-left into player lane
     t1_coords = [(-90, 60), (-120, 90), (-150, 110), (-180, 120), (-210, 110), (-240, 90)]
     for tx, ty in t1_coords:
         add_obj({1: 1, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 5, 57: 11})
@@ -246,104 +237,96 @@ def build_gd_level():
     # --- BOSS FIGHT ATTACK TRIGGERS & ANIMATIONS ---
 
     # --- PHASE 1: TENTACLE SLAM (X = 4500) ---
-    # Tentacle 1 Slams Down into lane (-120 GD units = -12 blocks)
     add_obj({1: 901, 2: 4500, 3: 180, 51: 11, 85: 0, 86: -120, 88: 0.4, 87: 8}) # Bounce Out
-    # Impact Shake
     add_obj({1: 1520, 2: 4515, 3: 180, 84: 75, 85: 5, 88: 0.5})
-    # Retract Tentacle 1 back up
     add_obj({1: 901, 2: 4700, 3: 180, 51: 11, 85: 0, 86: 120, 88: 0.8, 87: 1}) # Ease In Out
 
     # --- PHASE 2: INK BLAST CANNON (X = 4900) ---
-    # Boss Eyes Flash Red
     add_obj({1: 1006, 2: 4850, 3: 180, 97: 1, 98: 15, 7: 255, 8: 0, 9: 0, 99: 0.1, 100: 0.3, 101: 0.2})
-    # Ink Projectile (Group 16) Shoots Left across arena
-    add_obj({1: 901, 2: 4900, 3: 180, 51: 16, 85: -900, 86: 0, 88: 1.0, 87: 0}) # Linear move left
+    add_obj({1: 901, 2: 4900, 3: 180, 51: 16, 85: -900, 86: 0, 88: 1.0, 87: 0})
 
     # --- PHASE 3: BOTTOM TENTACLE SWEEP & ROTATION (X = 5300) ---
-    # Tentacle 2 Sweeps Upward
     add_obj({1: 901, 2: 5300, 3: 180, 51: 12, 85: 0, 86: 100, 88: 0.5, 87: 6})
-    # Rotate Tentacle 2
     add_obj({1: 1268, 2: 5310, 3: 180, 51: 12, 71: 10, 68: -35, 88: 0.6, 87: 1})
-    # Retract Tentacle 2
     add_obj({1: 901, 2: 5550, 3: 180, 51: 12, 85: 0, 86: -100, 88: 0.6, 87: 1})
 
     # --- PHASE 4: DUAL TENTACLE CRUSH & ENRAGE (X = 5800 to 6700) ---
-    # Screen shake and strobe pulse
     add_obj({1: 1520, 2: 5800, 3: 180, 84: 90, 85: 5, 88: 2.0})
-    # Eyes pulse Gold/Red continuously
     add_obj({1: 1006, 2: 5810, 3: 180, 97: 1, 98: 15, 7: 255, 8: 220, 9: 0, 99: 0.1, 100: 0.5, 101: 0.2})
 
-    # Simultaneous Tentacle 1 Slam & Tentacle 2 Sweep
     add_obj({1: 901, 2: 6000, 3: 180, 51: 11, 85: -100, 86: -100, 88: 0.5, 87: 8})
     add_obj({1: 901, 2: 6000, 3: 180, 51: 12, 85: -100, 86: 100, 88: 0.5, 87: 8})
 
-    # Retract back before defeat
     add_obj({1: 901, 2: 6500, 3: 180, 51: 11, 85: 100, 86: 100, 88: 0.8, 87: 1})
     add_obj({1: 901, 2: 6500, 3: 180, 51: 12, 85: 100, 86: -100, 88: 0.8, 87: 1})
 
     # --- BOSS DEFEAT & DISSOLVE (X = 6900) ---
-    # Alpha trigger dissolves all octopus groups (10, 11, 12, 13, 14, 15, 16)
     for grp in [10, 11, 12, 13, 14, 15, 16]:
         add_obj({1: 1007, 2: 6900, 3: 180, 51: grp, 35: 0.0, 10: 1.2})
 
-    # Massive explosion flash pulse & shake
     add_obj({1: 1006, 2: 6905, 3: 180, 97: 0, 98: 1000, 7: 255, 8: 255, 9: 255, 99: 0.1, 100: 0.3, 101: 1.0})
     add_obj({1: 1520, 2: 6910, 3: 180, 84: 95, 85: 5, 88: 1.5})
 
     # --- OUTRO & LEVEL ENDING (X = 7000 to 7500) ---
-    # Bioluminescent victory particles & End Portal
     for x in range(7100, 7400, 60):
         add_obj({1: 503, 2: x, 3: 180, 21: 4, 24: 5, 32: 2.0})
         add_obj({1: 503, 2: x + 30, 3: 220, 21: 6, 24: 5, 32: 1.5})
 
-    # Cube Portal & End Level Goal
     add_obj({1: 13, 2: 7400, 3: 180})
 
-    # Construct complete GD Level String
+    # Construct complete GD 2.2 Level String
     header = "kS38,1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0,kA13,0,kA15,0,kA16,0,kA17,0,kA18,0,kS39,0,kA2,0,kA3,0,kA4,0,kA6,0,kA7,0,kA8,0,kA9,0,kA10,0,kA11,0;"
     level_string = header + ";".join(objects) + ";"
 
-    return level_string
+    return level_string, len(objects)
 
-def export_gmd(level_name, description, creator, level_string):
-    # Compress level string using gzip and base64
+def export_gd_level(level_name, description, creator, level_string, obj_count):
+    # Compress level string using gzip and URL-safe base64 (GD requirement)
     compressed = gzip.compress(level_string.encode('utf-8'))
-    b64_str = base64.b64encode(compressed).decode('utf-8')
+    b64_urlsafe = base64.urlsafe_b64encode(compressed).decode('utf-8')
 
-    # Build XML plist representation for .gmd
+    # Build XML plist representation for GD 2.2 native export (.gdlvl / .gmd)
+    # k80 = 22 (GD 2.2 version tag), k45 = object count
     plist_xml = f"""<?xml version="1.0"?>
 <plist version="1.0" gcds="5">
 <dict>
 	<k>k0</k><i>0</i>
 	<k>k1</k><s>{level_name}</s>
 	<k>k2</k><s>{description}</s>
-	<k>k3</k><s>{b64_str}</s>
-	<k>k4</k><s>{b64_str}</s>
+	<k>k3</k><s>{b64_urlsafe}</s>
+	<k>k4</k><s>{b64_urlsafe}</s>
 	<k>k5</k><s>{creator}</s>
 	<k>k8</k><i>10</i>
 	<k>k18</k><i>0</i>
 	<k>k21</k><i>2</i>
-	<k>k45</k><i>0</i>
-	<k>k80</k><i>21</i>
+	<k>k45</k><i>{obj_count}</i>
+	<k>k80</k><i>22</i>
 	<k>kI1</k><r>100</r>
 	<k>kI2</k><r>100</r>
 	<k>kI3</k><r>100</r>
 </dict>
 </plist>"""
 
-    return plist_xml, b64_str
+    return plist_xml, b64_urlsafe
 
 def main():
-    print("Generating Insane Realism GD Level with Purple Octopus Boss Fight...")
-    level_str = build_gd_level()
-    print(f"Generated raw level string with length: {len(level_str)} characters.")
+    print("Generating Insane Realism GD 2.2 Level with Purple Octopus Boss Fight...")
+    level_str, obj_count = build_gd_level()
+    print(f"Generated raw level string with length: {len(level_str)} characters across {obj_count} objects.")
 
     level_name = "Abyssal Kraken"
     description = "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!"
     creator = "Jules"
 
-    gmd_xml, b64_gzip = export_gmd(level_name, description, creator, level_str)
+    gmd_xml, b64_urlsafe = export_gd_level(level_name, description, creator, level_str, obj_count)
 
+    # Export .gdlvl (Vanilla Geometry Dash 2.209 level export format)
+    gdlvl_filename = "Abyssal_Kraken.gdlvl"
+    with open(gdlvl_filename, "w", encoding="utf-8") as f:
+        f.write(gmd_xml)
+    print(f"Successfully saved {gdlvl_filename}!")
+
+    # Export .gmd (GDShare / level tools format)
     gmd_filename = "Abyssal_Kraken.gmd"
     with open(gmd_filename, "w", encoding="utf-8") as f:
         f.write(gmd_xml)
