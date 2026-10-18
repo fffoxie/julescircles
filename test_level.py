@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
 test_level.py
-Validation script for Geometry Dash 2.2 .gdlvl and .gmd level files and level string integrity.
+Validation & Round-Trip Test Suite for Geometry Dash 2.2 .gdlvl and .gmd Level Files.
 """
 
 import gzip
 import base64
 import xml.etree.ElementTree as ET
 import sys
+from generate_level import export_gd_level, build_gd_level
 
-def parse_plist_data(xml_str):
+def parse_plist_dict(xml_str):
     root = ET.fromstring(xml_str)
     assert root.tag == "plist", f"Expected root tag 'plist', got '{root.tag}'"
     dict_elem = root.find("dict")
@@ -21,50 +22,99 @@ def parse_plist_data(xml_str):
         if elem.tag == "k":
             current_key = elem.text
         elif current_key is not None:
-            plist_data[current_key] = elem.text
+            # store tuple (tag, text)
+            plist_data[current_key] = (elem.tag, elem.text)
             current_key = None
     return plist_data
 
-def verify_level_data(filepath, is_base64_gzipped_plist=False):
-    print(f"\n=== Testing {filepath} (is_compressed_plist={is_base64_gzipped_plist}) ===")
+def test_gdlvl_outer_decoding():
+    print("=== Step 1: Testing Outer .gdlvl Decoding Pipeline ===")
+    with open("Abyssal_Kraken.gdlvl", "r", encoding="utf-8") as f:
+        gdlvl_content = f.read().strip()
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        file_content = f.read().strip()
+    # Pipeline: .gdlvl file -> URL-safe Base64 decode -> Gzip decompress -> XML string
+    compressed_bytes = base64.urlsafe_b64decode(gdlvl_content)
+    xml_bytes = gzip.decompress(compressed_bytes)
+    xml_str = xml_bytes.decode('utf-8')
 
-    if is_base64_gzipped_plist:
-        # Decode URL-safe base64 and decompress gzip plist XML
-        raw_xml_bytes = gzip.decompress(base64.urlsafe_b64decode(file_content))
-        xml_str = raw_xml_bytes.decode('utf-8')
-    else:
-        xml_str = file_content
+    assert xml_str.startswith("<?xml") and "<plist" in xml_str, "Outer .gdlvl did not decode into valid XML plist!"
+    print(f"✓ Successfully decoded .gdlvl into UTF-8 XML Plist ({len(xml_str)} chars).")
+    return xml_str
 
-    # 1. Parse XML Plist
-    plist_data = parse_plist_data(xml_str)
-    print(f"✓ Parsed plist keys: {list(plist_data.keys())}")
-    assert plist_data.get("k1") == "Abyssal Kraken", f"Unexpected level name: {plist_data.get('k1')}"
-    assert plist_data.get("k80") == "22", f"Expected GD 2.2 tag k80=22, got {plist_data.get('k80')}"
-    assert int(plist_data.get("k45", 0)) > 1000, f"Expected k45 > 1000 object count, got {plist_data.get('k45')}"
-    print(f"✓ Level Name (k1): {plist_data.get('k1')}, Version (k80): {plist_data.get('k80')}, Object Count (k45): {plist_data.get('k45')}")
+def test_metadata_mapping(xml_str):
+    print("\n=== Step 2: Testing XML Metadata Key Mapping & Types ===")
+    plist_data = parse_plist_dict(xml_str)
 
-    # 2. Decode URL-safe base64 gzip level string from k4
-    k4_b64 = plist_data.get("k4")
-    assert k4_b64 is not None and len(k4_b64) > 0, "k4 level string is empty!"
+    # Key 1: Level ID (integer)
+    k1_tag, k1_val = plist_data.get("k1", (None, None))
+    assert k1_tag == "i", f"k1 tag should be 'i' (integer), got '{k1_tag}'"
+    assert k1_val.isdigit(), f"k1 value should be numeric level ID, got '{k1_val}'"
+    print(f"✓ k1 (Level ID): {k1_val} (type: integer)")
 
-    compressed_bytes = base64.urlsafe_b64decode(k4_b64)
-    decompressed_str = gzip.decompress(compressed_bytes).decode('utf-8')
-    print(f"✓ Successfully decoded URL-safe base64 & decompressed k4 level string ({len(decompressed_str)} chars).")
+    # Key 2: Level Name (string)
+    k2_tag, k2_val = plist_data.get("k2", (None, None))
+    assert k2_tag == "s", f"k2 tag should be 's' (string), got '{k2_tag}'"
+    assert k2_val == "Abyssal Kraken", f"Unexpected level name: '{k2_val}'"
+    print(f"✓ k2 (Level Name): '{k2_val}' (type: string)")
 
-    # 3. Verify level header and objects
-    parts = decompressed_str.split(";")
+    # Key 3: Description (Base64-encoded string)
+    k3_tag, k3_val = plist_data.get("k3", (None, None))
+    assert k3_tag == "s", f"k3 tag should be 's' (string), got '{k3_tag}'"
+    decoded_desc = base64.b64decode(k3_val).decode('utf-8')
+    assert "purple octopus boss fight" in decoded_desc, f"Decoded description invalid: '{decoded_desc}'"
+    print(f"✓ k3 (Base64 Description): '{decoded_desc}' (type: base64 string)")
+
+    # Key 4: Inner Level String (URL-safe Base64 gzipped object string)
+    k4_tag, k4_val = plist_data.get("k4", (None, None))
+    assert k4_tag == "s", f"k4 tag should be 's' (string), got '{k4_tag}'"
+    compressed_level = base64.urlsafe_b64decode(k4_val)
+    inner_level_str = gzip.decompress(compressed_level).decode('utf-8')
+    assert inner_level_str.startswith("kS38,"), "Inner level string missing kS38 header!"
+    print(f"✓ k4 (Inner Level String): Successfully decompressed inner level string ({len(inner_level_str)} chars)")
+
+    # Key 5: Creator Name (string)
+    k5_tag, k5_val = plist_data.get("k5", (None, None))
+    assert k5_tag == "s" and k5_val == "Jules", f"Unexpected creator: '{k5_val}'"
+    print(f"✓ k5 (Creator): '{k5_val}'")
+
+    # Key 8: Official Song ID (integer)
+    k8_tag, k8_val = plist_data.get("k8", (None, None))
+    assert k8_tag == "i" and k8_val == "14", f"Unexpected song ID: '{k8_val}'"
+    print(f"✓ k8 (Official Song ID): {k8_val}")
+
+    # Key 21: Level Type (integer)
+    k21_tag, k21_val = plist_data.get("k21", (None, None))
+    assert k21_tag == "i" and k21_val == "2", f"Expected level type 2 (local editor), got '{k21_val}'"
+    print(f"✓ k21 (Level Type): {k21_val} (Local Editor Level)")
+
+    # Key 45: Custom Song ID (integer)
+    k45_tag, k45_val = plist_data.get("k45", (None, None))
+    assert k45_tag == "i" and k45_val == "0", f"Expected custom song ID 0, got '{k45_val}'"
+    print(f"✓ k45 (Custom Song ID): {k45_val}")
+
+    # Key 48: Object Count (integer)
+    k48_tag, k48_val = plist_data.get("k48", (None, None))
+    assert k48_tag == "i" and int(k48_val) == 1260, f"Expected object count 1260, got '{k48_val}'"
+    print(f"✓ k48 (Object Count): {k48_val}")
+
+    # Key 80: Editor Version (integer)
+    k80_tag, k80_val = plist_data.get("k80", (None, None))
+    assert k80_tag == "i" and k80_val == "22", f"Expected GD 2.2 tag k80=22, got '{k80_val}'"
+    print(f"✓ k80 (Editor Version): {k80_val}")
+
+    return inner_level_str
+
+def test_inner_level_objects(inner_level_str):
+    print("\n=== Step 3: Testing Inner Level Objects & Boss Groups ===")
+    parts = inner_level_str.split(";")
     header = parts[0]
     objects = parts[1:-1] # excluding header and trailing empty item
 
     assert "kS38," in header, "Level header missing kS38 color data"
     print(f"✓ Header verified: {header[:40]}...")
     print(f"✓ Total Objects Count: {len(objects)}")
-    assert len(objects) >= 300, f"Object count too low ({len(objects)}), expected rich level design."
+    assert len(objects) == 1260, f"Expected 1260 objects, got {len(objects)}"
 
-    # 4. Parse objects and verify object types & groups
     obj_type_counts = {}
     groups_found = set()
 
@@ -80,19 +130,16 @@ def verify_level_data(filepath, is_base64_gzipped_plist=False):
         if obj_id:
             obj_type_counts[obj_id] = obj_type_counts.get(obj_id, 0) + 1
 
-        # Check group IDs (key 57)
         if "57" in obj_dict:
             grp_val = obj_dict["57"]
             for g in grp_val.split("."):
                 groups_found.add(g)
 
-    print(f"✓ Object type diversity count: {len(obj_type_counts)} unique object IDs.")
-
     # Check Color Triggers (ID 221)
     assert obj_type_counts.get("221", 0) >= 8, f"Expected at least 8 Color Triggers, found {obj_type_counts.get('221')}"
     print(f"✓ Color Triggers verified ({obj_type_counts.get('221')} count).")
 
-    # Check Key Triggers (Move 901, Pulse 1006, Alpha 1007, Rotate 1268, Shake 1520)
+    # Check Key Triggers
     assert "901" in obj_type_counts, "Move trigger (901) missing!"
     assert "1006" in obj_type_counts, "Pulse trigger (1006) missing!"
     assert "1007" in obj_type_counts, "Alpha trigger (1007) missing!"
@@ -100,7 +147,7 @@ def verify_level_data(filepath, is_base64_gzipped_plist=False):
     assert "1520" in obj_type_counts, "Shake trigger (1520) missing!"
     print("✓ All transition & animation triggers (Move, Pulse, Alpha, Rotate, Shake) present.")
 
-    # Check Octopus Boss Groups (10: Head, 11: Tentacle 1, 12: Tentacle 2, 13: Tentacle 3, 14: Tentacle 4, 15: Eyes, 16: Ink Cannon)
+    # Check Octopus Boss Groups
     expected_boss_groups = {"10", "11", "12", "13", "14", "15", "16"}
     for grp in expected_boss_groups:
         assert grp in groups_found, f"Boss group {grp} not found in level objects!"
@@ -113,11 +160,22 @@ def verify_level_data(filepath, is_base64_gzipped_plist=False):
     assert "1755" in obj_type_counts, "Spider portal (1755) missing"
     print("✓ Game mode portals (Cube, Ship, Wave, Spider) verified.")
 
+def test_roundtrip_reencoding():
+    print("\n=== Step 4: Testing Round-Trip Re-Encoding & Decoding ===")
+    level_str, obj_count = build_gd_level()
+    plist_xml, b64_outer = export_gd_level(0, "Abyssal Kraken", "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!", "Jules", level_str, obj_count, 14)
+
+    # Re-decode b64_outer
+    decoded_xml = gzip.decompress(base64.urlsafe_b64decode(b64_outer)).decode('utf-8')
+    assert decoded_xml == plist_xml, "Re-encoded XML string does not match exported XML string!"
+    print("✓ Complete Round-Trip Encode/Decode Verification Succeeded!")
+
 def main():
-    verify_level_data("Abyssal_Kraken.gdlvl", is_base64_gzipped_plist=True)
-    verify_level_data("Abyssal_Kraken_xml.gdlvl", is_base64_gzipped_plist=False)
-    verify_level_data("Abyssal_Kraken.gmd", is_base64_gzipped_plist=False)
-    print("\n🎉 ALL LEVEL VERIFICATION TESTS PASSED SUCCESSFULLY FOR ALL LEVEL FILES!")
+    xml_str = test_gdlvl_outer_decoding()
+    inner_str = test_metadata_mapping(xml_str)
+    test_inner_level_objects(inner_str)
+    test_roundtrip_reencoding()
+    print("\n🎉 ALL GD 2.2 LEVEL FORMAT AND DECODE/ENCODE TESTS PASSED 100% SUCCESSFULLY!")
 
 if __name__ == "__main__":
     main()

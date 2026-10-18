@@ -1,16 +1,28 @@
 #!/usr/bin/env python3
 """
 generate_level.py
-Generates an Insane Realism Geometry Dash level (GD 2.2 / 2.209 format) featuring:
-- Atmospheric bioluminescent oceanic artwork & realistic slate/crystal structures
-- Dynamic transitions with camera/screen wipes and speed shifts
-- A massive, fully animated Purple Octopus Boss Fight with multi-stage tentacle attacks and ink blasts
+Generates an Insane Realism Geometry Dash 2.2 level according to the official GD level schema:
+
+Metadata Schema:
+- k1: Level ID (integer) -> 0
+- k2: Level Name (string) -> "Abyssal Kraken"
+- k3: Description (Base64-encoded string)
+- k4: Inner Level String (URL-safe Base64 gzipped level object string)
+- k5: Creator Name (string) -> "Jules"
+- k8: Official Song ID (integer) -> 14 (Clubstep track)
+- k18: Password (integer) -> 0
+- k21: Level Type (integer) -> 2 (Local editor level)
+- k45: Custom Song ID (integer) -> 0
+- k48: Object Count (integer) -> 1260
+- k80: Editor Version (integer) -> 22 (GD 2.2)
+
+Outer Export Pipeline (.gdlvl):
+  XML UTF-8 bytes -> Gzip compression -> URL-safe Base64 encoding -> .gdlvl file
 
 Outputs:
-- Abyssal_Kraken.gdlvl (Vanilla GD 2.209 native level export: Base64-gzipped plist string)
-- Abyssal_Kraken_xml.gdlvl (Vanilla GD 2.209 XML Plist format)
-- Abyssal_Kraken.gmd (GDShare / GD level export format)
-- level_string.txt (Raw GD level string)
+- Abyssal_Kraken.gdlvl (Outer Gzip + URL-safe Base64 encoded XML Plist)
+- Abyssal_Kraken.gmd (Raw XML Plist)
+- level_string.txt (Raw uncompressed level object string)
 """
 
 import gzip
@@ -281,24 +293,39 @@ def build_gd_level():
 
     return level_string, len(objects)
 
-def export_gd_level(level_name, description, creator, level_string, obj_count):
-    # Compress level string using gzip and URL-safe base64
+def export_gd_level(level_id, level_name, description, creator, level_string, obj_count, official_song_id=14):
+    # 1. Inner Level String Encoding (Gzip -> URL-safe Base64)
     compressed_level = gzip.compress(level_string.encode('utf-8'))
     b64_level_urlsafe = base64.urlsafe_b64encode(compressed_level).decode('utf-8')
 
-    # Build XML plist representation for GD 2.2
+    # 2. Description Encoding (Standard Base64)
+    b64_description = base64.b64encode(description.encode('utf-8')).decode('utf-8')
+
+    # 3. Build XML Plist Representation using correct GD Metadata Schema
+    # k1 = Level ID (integer)
+    # k2 = Level Name (string)
+    # k3 = Base64-encoded description string
+    # k4 = Inner Level String (Base64 URL-safe gzipped object string)
+    # k5 = Creator Name (string)
+    # k8 = Official Song ID (integer)
+    # k18 = Password (integer)
+    # k21 = Level Type (integer: 2 = Local Editor Level)
+    # k45 = Custom Song ID (integer: 0 if using official song)
+    # k48 = Object Count (integer)
+    # k80 = Editor Level Version (integer: 22)
     plist_xml = f"""<?xml version="1.0"?>
 <plist version="1.0" gcds="5">
 <dict>
-	<k>k0</k><i>0</i>
-	<k>k1</k><s>{level_name}</s>
-	<k>k2</k><s>{description}</s>
+	<k>k1</k><i>{level_id}</i>
+	<k>k2</k><s>{level_name}</s>
+	<k>k3</k><s>{b64_description}</s>
 	<k>k4</k><s>{b64_level_urlsafe}</s>
 	<k>k5</k><s>{creator}</s>
-	<k>k8</k><i>1</i>
+	<k>k8</k><i>{official_song_id}</i>
 	<k>k18</k><i>0</i>
-	<k>k21</k><i>0</i>
-	<k>k45</k><i>{obj_count}</i>
+	<k>k21</k><i>2</i>
+	<k>k45</k><i>0</i>
+	<k>k48</k><i>{obj_count}</i>
 	<k>k80</k><i>22</i>
 	<k>kI1</k><r>1</r>
 	<k>kI2</k><r>1</r>
@@ -306,39 +333,36 @@ def export_gd_level(level_name, description, creator, level_string, obj_count):
 </dict>
 </plist>"""
 
-    # Compressed plist for vanilla GD 2.209 level export file (.gdlvl)
+    # 4. Outer .gdlvl Export Pipeline (XML UTF-8 bytes -> Gzip -> URL-safe Base64)
     compressed_plist = gzip.compress(plist_xml.encode('utf-8'))
-    b64_plist_urlsafe = base64.urlsafe_b64encode(compressed_plist).decode('utf-8')
+    b64_outer_gdlvl = base64.urlsafe_b64encode(compressed_plist).decode('utf-8')
 
-    return plist_xml, b64_plist_urlsafe
+    return plist_xml, b64_outer_gdlvl
 
 def main():
     print("Generating Insane Realism GD 2.2 Level with Purple Octopus Boss Fight...")
     level_str, obj_count = build_gd_level()
     print(f"Generated raw level string with length: {len(level_str)} characters across {obj_count} objects.")
 
+    level_id = 0
     level_name = "Abyssal Kraken"
     description = "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!"
     creator = "Jules"
+    official_song_id = 14 # Clubstep
 
-    plist_xml, b64_plist = export_gd_level(level_name, description, creator, level_str, obj_count)
+    plist_xml, b64_outer_gdlvl = export_gd_level(level_id, level_name, description, creator, level_str, obj_count, official_song_id)
 
-    # Output 1: Abyssal_Kraken.gdlvl (Vanilla GD 2.209 native export: Base64 Gzipped Plist)
+    # Output 1: Abyssal_Kraken.gdlvl (Outer Gzip + URL-safe Base64 encoded XML Plist string)
     with open("Abyssal_Kraken.gdlvl", "w", encoding="utf-8") as f:
-        f.write(b64_plist)
-    print("Successfully saved Abyssal_Kraken.gdlvl (native GD 2.209 base64-gzip export format)!")
+        f.write(b64_outer_gdlvl)
+    print("Successfully saved Abyssal_Kraken.gdlvl (Outer Gzip + URL-safe Base64 .gdlvl export)!")
 
-    # Output 2: Abyssal_Kraken_xml.gdlvl (Vanilla GD 2.209 raw XML Plist export format)
-    with open("Abyssal_Kraken_xml.gdlvl", "w", encoding="utf-8") as f:
-        f.write(plist_xml)
-    print("Successfully saved Abyssal_Kraken_xml.gdlvl (raw XML Plist export format)!")
-
-    # Output 3: Abyssal_Kraken.gmd (GDShare / GD level format)
+    # Output 2: Abyssal_Kraken.gmd (Raw XML Plist format)
     with open("Abyssal_Kraken.gmd", "w", encoding="utf-8") as f:
         f.write(plist_xml)
-    print("Successfully saved Abyssal_Kraken.gmd!")
+    print("Successfully saved Abyssal_Kraken.gmd (Raw XML Plist format)!")
 
-    # Output 4: level_string.txt (Raw level object string)
+    # Output 3: level_string.txt (Raw level object string)
     with open("level_string.txt", "w", encoding="utf-8") as f:
         f.write(level_str)
     print("Successfully saved level_string.txt!")
