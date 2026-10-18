@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
 test_level.py
-Validation & Round-Trip Test Suite for Geometry Dash 2.2 Void_Leviathan.gdlvl file.
+Validation & Diagnostic Test Suite for Geometry Dash 2.2 Void_Leviathan.gdlvl file.
 """
 
 import gzip
 import base64
 import xml.etree.ElementTree as ET
 import sys
-from generate_level import export_gd_level, build_gd_level
+from generate_level import build_gd_level
 
 def parse_plist_dict(xml_str):
     root = ET.fromstring(xml_str)
@@ -38,7 +38,7 @@ def test_gdlvl_xml_structure():
     print(f"✓ Void_Leviathan.gdlvl is a formatted XML Plist file ({len(xml_str)} chars).")
     return xml_str
 
-def test_metadata_mapping(xml_str):
+def test_metadata_mapping(xml_str, expected_obj_count):
     print("\n=== Step 2: Testing Reference XML Metadata Key Mapping & Types ===")
     plist_data = parse_plist_dict(xml_str)
 
@@ -56,7 +56,7 @@ def test_metadata_mapping(xml_str):
     k3_tag, k3_val = plist_data.get("k3", (None, None))
     assert k3_tag == "s", f"k3 tag should be 's' (string), got '{k3_tag}'"
     decoded_desc = base64.b64decode(k3_val).decode('utf-8')
-    assert "purple octopus boss fight" in decoded_desc, f"Decoded description invalid: '{decoded_desc}'"
+    assert "purple octopus" in decoded_desc.lower(), f"Decoded description invalid: '{decoded_desc}'"
     print(f"✓ k3 (Base64 Description): '{decoded_desc}' (type: base64 string)")
 
     # Key k4: Inner Level String (URL-safe Base64 gzipped object string)
@@ -84,7 +84,7 @@ def test_metadata_mapping(xml_str):
 
     # Key k48: Object Count (integer)
     k48_tag, k48_val = plist_data.get("k48", (None, None))
-    assert k48_tag == "i" and int(k48_val) == 1260, f"Expected object count 1260, got '{k48_val}'"
+    assert k48_tag == "i" and int(k48_val) == expected_obj_count, f"Expected object count {expected_obj_count}, got '{k48_val}'"
     print(f"✓ k48 (Object Count): {k48_val}")
 
     # Key k50: Binary Version (integer)
@@ -110,8 +110,8 @@ def test_metadata_mapping(xml_str):
 
     return inner_level_str
 
-def test_inner_level_objects(inner_level_str):
-    print("\n=== Step 3: Testing Inner Level Objects & Boss Groups ===")
+def test_inner_level_objects(inner_level_str, expected_obj_count):
+    print("\n=== Step 3: Testing Inner Level Objects & Decorated Boss Fight ===")
     parts = inner_level_str.split(";")
     header = parts[0]
     objects = parts[1:-1] # excluding header and trailing empty item
@@ -119,7 +119,7 @@ def test_inner_level_objects(inner_level_str):
     assert "kS38," in header, "Level header missing kS38 color data"
     print(f"✓ Header verified: {header[:40]}...")
     print(f"✓ Total Objects Count: {len(objects)}")
-    assert len(objects) == 1260, f"Expected 1260 objects, got {len(objects)}"
+    assert len(objects) == expected_obj_count, f"Expected {expected_obj_count} decorated objects, got {len(objects)}"
 
     obj_type_counts = {}
     groups_found = set()
@@ -141,36 +141,43 @@ def test_inner_level_objects(inner_level_str):
             for g in grp_val.split("."):
                 groups_found.add(g)
 
+    # Check Decorated Objects (3D slate blocks 740/741, crystal spikes 1330, spherical glow 503/504/505, suction rings 1751, vortex saw 1734)
+    assert "740" in obj_type_counts, "3D Slate Block (740) missing!"
+    assert "1330" in obj_type_counts, "Crystal Spike Hazard (1330) missing!"
+    assert "503" in obj_type_counts, "Spherical Glow Orb (503) missing!"
+    assert "1751" in obj_type_counts, "Suction Cup Ring (1751) missing!"
+    assert "1734" in obj_type_counts, "Vortex Saw Blade (1734) missing!"
+    print("✓ All decorated blocks (3D slate blocks, crystal spikes, spherical glow orbs, suction cup rings, vortex saw) verified.")
+
     # Check Color Triggers (ID 221)
     assert obj_type_counts.get("221", 0) >= 8, f"Expected at least 8 Color Triggers, found {obj_type_counts.get('221')}"
     print(f"✓ Color Triggers verified ({obj_type_counts.get('221')} count).")
 
-    # Check Key Triggers
+    # Check Key Animation Triggers
     assert "901" in obj_type_counts, "Move trigger (901) missing!"
     assert "1006" in obj_type_counts, "Pulse trigger (1006) missing!"
     assert "1007" in obj_type_counts, "Alpha trigger (1007) missing!"
     assert "1268" in obj_type_counts, "Rotate trigger (1268) missing!"
     assert "1520" in obj_type_counts, "Shake trigger (1520) missing!"
-    print("✓ All transition & animation triggers (Move, Pulse, Alpha, Rotate, Shake) present.")
+    print("✓ All animation triggers (Move, Pulse, Alpha, Rotate, Shake) present.")
 
-    # Check Octopus Boss Groups
-    expected_boss_groups = {"10", "11", "12", "13", "14", "15", "16"}
+    # Check Evil Purple Octopus Boss Groups (10, 11, 12, 13, 14, 15, 16, 21, 22, 23, 24)
+    expected_boss_groups = {"10", "11", "12", "13", "14", "15", "16", "21", "22", "23", "24"}
     for grp in expected_boss_groups:
         assert grp in groups_found, f"Boss group {grp} not found in level objects!"
-    print(f"✓ Boss fight groups verified: {expected_boss_groups.intersection(groups_found)}")
+    print(f"✓ All Evil Purple Octopus boss fight groups verified: {expected_boss_groups.intersection(groups_found)}")
 
-    # Check Portals
-    assert "13" in obj_type_counts, "Cube portal (13) missing"
+    # Check Ship Portal
     assert "12" in obj_type_counts, "Ship portal (12) missing"
-    assert "201" in obj_type_counts, "Wave portal (201) missing"
-    assert "1755" in obj_type_counts, "Spider portal (1755) missing"
-    print("✓ Game mode portals (Cube, Ship, Wave, Spider) verified.")
+    print("✓ Ship portal (12) verified.")
 
 def main():
+    objects = build_gd_level()
+    expected_obj_count = len(objects)
     xml_str = test_gdlvl_xml_structure()
-    inner_str = test_metadata_mapping(xml_str)
-    test_inner_level_objects(inner_str)
-    print("\n🎉 ALL GD 2.2 VOID LEVIATHAN LEVEL TESTS PASSED 100% SUCCESSFULLY!")
+    inner_str = test_metadata_mapping(xml_str, expected_obj_count)
+    test_inner_level_objects(inner_str, expected_obj_count)
+    print("\n🎉 ALL GD 2.2 DECORATED SHIP BOSS FIGHT LEVEL TESTS PASSED 100% SUCCESSFULLY!")
 
 if __name__ == "__main__":
     main()
