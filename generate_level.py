@@ -1,31 +1,13 @@
 #!/usr/bin/env python3
 """
 generate_level.py
-Generates an Insane Realism Geometry Dash 2.2 level according to the proven working GD .gdlvl reference schema:
-
-Working Reference Schema:
-- Root element: <plist version="1.0" gjver="2.0">
-- kCEK: Encryption / Format Indicator (integer: 4)
-- k2: Level Name (string: "Abyssal Kraken")
-- k3: Description (Base64-encoded string)
-- k4: Inner Level String (URL-safe Base64 gzipped level object string)
-- k5: Creator Name (string: "Jules")
-- k16: Level Revision (integer: 1)
-- k21: Level Type (integer: 2 = Local Editor Level)
-- k48: Object Count (integer: 1260)
-- k50: Binary Version (integer: 45)
-- k80: Editor Version (integer: 22 = GD 2.2)
-- k101: Editor Settings (integer: 0)
-- kI1: Camera Zoom Setting (integer: 0)
-- kI2: Camera Offset Setting (integer: 0)
-- kI3: Camera Opacity Setting (integer: 1)
-
-Outer Export Pipeline (.gdlvl):
-  XML UTF-8 bytes -> Gzip compression -> URL-safe Base64 encoding -> .gdlvl file
+Generates an Insane Realism Geometry Dash 2.2 level "Void Leviathan" featuring:
+- Atmospheric bioluminescent oceanic artwork & realistic slate/crystal structures
+- Dynamic transitions with camera/screen wipes and speed shifts
+- A massive, fully animated Purple Octopus Boss Fight with multi-stage tentacle attacks and ink blasts
 
 Outputs:
-- Abyssal_Kraken.gdlvl (Outer Gzip + URL-safe Base64 encoded XML Plist)
-- Abyssal_Kraken.gmd (Raw XML Plist format)
+- Void_Leviathan.gdlvl (Formatted XML Plist format matching .gmd specification)
 - level_string.txt (Raw uncompressed level object string)
 """
 
@@ -305,22 +287,7 @@ def export_gd_level(level_name, description, creator, level_string, obj_count):
     # 2. Description Encoding (Standard Base64)
     b64_description = base64.b64encode(description.encode('utf-8')).decode('utf-8')
 
-    # 3. Build XML Plist Representation using Working Reference Schema:
-    # Root element: <plist version="1.0" gjver="2.0">
-    # kCEK = 4
-    # k2 = Level Name (string)
-    # k3 = Base64-encoded description string
-    # k4 = Inner Level String (URL-safe Base64 gzipped level object string)
-    # k5 = Creator Name (string)
-    # k16 = Level Revision (integer: 1)
-    # k21 = Level Type (integer: 2 = Local Editor Level)
-    # k48 = Object Count (integer)
-    # k50 = Binary Version (integer: 45)
-    # k80 = Editor Level Version (integer: 22 = GD 2.2)
-    # k101 = Editor Settings (integer: 0)
-    # kI1 = Camera Zoom Setting (integer: 0)
-    # kI2 = Camera Offset Setting (integer: 0)
-    # kI3 = Camera Opacity Setting (integer: 1)
+    # 3. Build Formatted XML Plist Representation (.gdlvl)
     plist_xml = f"""<?xml version="1.0"?>
 <plist version="1.0" gjver="2.0">
 <dict>
@@ -341,34 +308,25 @@ def export_gd_level(level_name, description, creator, level_string, obj_count):
 </dict>
 </plist>"""
 
-    # 4. Outer .gdlvl Export Pipeline (XML UTF-8 bytes -> Gzip -> URL-safe Base64)
-    compressed_plist = gzip.compress(plist_xml.encode('utf-8'))
-    b64_outer_gdlvl = base64.urlsafe_b64encode(compressed_plist).decode('utf-8')
-
-    return plist_xml, b64_outer_gdlvl
+    return plist_xml
 
 def main():
-    print("Generating Insane Realism GD 2.2 Level with Purple Octopus Boss Fight...")
+    print("Generating Insane Realism GD 2.2 Level 'Void Leviathan' with Purple Octopus Boss Fight...")
     level_str, obj_count = build_gd_level()
     print(f"Generated raw level string with length: {len(level_str)} characters across {obj_count} objects.")
 
-    level_name = "Abyssal Kraken"
+    level_name = "Void Leviathan"
     description = "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!"
     creator = "Jules"
 
-    plist_xml, b64_outer_gdlvl = export_gd_level(level_name, description, creator, level_str, obj_count)
+    plist_xml = export_gd_level(level_name, description, creator, level_str, obj_count)
 
-    # Output 1: Abyssal_Kraken.gdlvl (Outer Gzip + URL-safe Base64 encoded XML Plist string)
-    with open("Abyssal_Kraken.gdlvl", "w", encoding="utf-8") as f:
-        f.write(b64_outer_gdlvl)
-    print("Successfully saved Abyssal_Kraken.gdlvl (Outer Gzip + URL-safe Base64 .gdlvl export)!")
-
-    # Output 2: Abyssal_Kraken.gmd (Raw XML Plist format)
-    with open("Abyssal_Kraken.gmd", "w", encoding="utf-8") as f:
+    # Output 1: Void_Leviathan.gdlvl (Formatted XML Plist file)
+    with open("Void_Leviathan.gdlvl", "w", encoding="utf-8") as f:
         f.write(plist_xml)
-    print("Successfully saved Abyssal_Kraken.gmd (Raw XML Plist format)!")
+    print("Successfully saved Void_Leviathan.gdlvl (Formatted XML Plist format)!")
 
-    # Output 3: level_string.txt (Raw level object string)
+    # Output 2: level_string.txt (Raw level object string)
     with open("level_string.txt", "w", encoding="utf-8") as f:
         f.write(level_str)
     print("Successfully saved level_string.txt!")

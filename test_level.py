@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 test_level.py
-Validation & Round-Trip Test Suite for Geometry Dash 2.2 .gdlvl and .gmd Level Files
-matching the verified Claude reference schema.
+Validation & Round-Trip Test Suite for Geometry Dash 2.2 Void_Leviathan.gdlvl file.
 """
 
 import gzip
@@ -30,18 +29,13 @@ def parse_plist_dict(xml_str):
             current_key = None
     return plist_data
 
-def test_gdlvl_outer_decoding():
-    print("=== Step 1: Testing Outer .gdlvl Decoding Pipeline ===")
-    with open("Abyssal_Kraken.gdlvl", "r", encoding="utf-8") as f:
-        gdlvl_content = f.read().strip()
+def test_gdlvl_xml_structure():
+    print("=== Step 1: Testing Void_Leviathan.gdlvl XML Plist File ===")
+    with open("Void_Leviathan.gdlvl", "r", encoding="utf-8") as f:
+        xml_str = f.read().strip()
 
-    # Outer Pipeline: .gdlvl file -> URL-safe Base64 decode -> Gzip decompress -> XML string
-    compressed_bytes = base64.urlsafe_b64decode(gdlvl_content)
-    xml_bytes = gzip.decompress(compressed_bytes)
-    xml_str = xml_bytes.decode('utf-8')
-
-    assert xml_str.startswith("<?xml") and "<plist" in xml_str, "Outer .gdlvl did not decode into valid XML plist!"
-    print(f"✓ Successfully decoded .gdlvl into UTF-8 XML Plist ({len(xml_str)} chars).")
+    assert xml_str.startswith("<?xml") and "<plist" in xml_str, "Void_Leviathan.gdlvl is not valid XML plist!"
+    print(f"✓ Void_Leviathan.gdlvl is a formatted XML Plist file ({len(xml_str)} chars).")
     return xml_str
 
 def test_metadata_mapping(xml_str):
@@ -55,7 +49,7 @@ def test_metadata_mapping(xml_str):
 
     # Key k2: Level Name (string)
     k2_tag, k2_val = plist_data.get("k2", (None, None))
-    assert k2_tag == "s" and k2_val == "Abyssal Kraken", f"Unexpected level name: '{k2_val}'"
+    assert k2_tag == "s" and k2_val == "Void Leviathan", f"Unexpected level name: '{k2_val}'"
     print(f"✓ k2 (Level Name): '{k2_val}' (type: string)")
 
     # Key k3: Description (Base64-encoded string)
@@ -172,22 +166,11 @@ def test_inner_level_objects(inner_level_str):
     assert "1755" in obj_type_counts, "Spider portal (1755) missing"
     print("✓ Game mode portals (Cube, Ship, Wave, Spider) verified.")
 
-def test_roundtrip_reencoding():
-    print("\n=== Step 4: Testing Round-Trip Re-Encoding & Decoding ===")
-    level_str, obj_count = build_gd_level()
-    plist_xml, b64_outer = export_gd_level("Abyssal Kraken", "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!", "Jules", level_str, obj_count)
-
-    # Re-decode b64_outer
-    decoded_xml = gzip.decompress(base64.urlsafe_b64decode(b64_outer)).decode('utf-8')
-    assert decoded_xml == plist_xml, "Re-encoded XML string does not match exported XML string!"
-    print("✓ Complete Round-Trip Encode/Decode Verification Succeeded!")
-
 def main():
-    xml_str = test_gdlvl_outer_decoding()
+    xml_str = test_gdlvl_xml_structure()
     inner_str = test_metadata_mapping(xml_str)
     test_inner_level_objects(inner_str)
-    test_roundtrip_reencoding()
-    print("\n🎉 ALL GD 2.2 LEVEL FORMAT AND DECODE/ENCODE TESTS PASSED 100% SUCCESSFULLY!")
+    print("\n🎉 ALL GD 2.2 VOID LEVIATHAN LEVEL TESTS PASSED 100% SUCCESSFULLY!")
 
 if __name__ == "__main__":
     main()
