@@ -1,27 +1,31 @@
 #!/usr/bin/env python3
 """
 generate_level.py
-Generates an Insane Realism Geometry Dash 2.2 level according to the official GD level schema:
+Generates an Insane Realism Geometry Dash 2.2 level according to the proven working GD .gdlvl reference schema:
 
-Metadata Schema:
-- k1: Level ID (integer) -> 0
-- k2: Level Name (string) -> "Abyssal Kraken"
+Working Reference Schema:
+- Root element: <plist version="1.0" gjver="2.0">
+- kCEK: Encryption / Format Indicator (integer: 4)
+- k2: Level Name (string: "Abyssal Kraken")
 - k3: Description (Base64-encoded string)
 - k4: Inner Level String (URL-safe Base64 gzipped level object string)
-- k5: Creator Name (string) -> "Jules"
-- k8: Official Song ID (integer) -> 14 (Clubstep track)
-- k18: Password (integer) -> 0
-- k21: Level Type (integer) -> 2 (Local editor level)
-- k45: Custom Song ID (integer) -> 0
-- k48: Object Count (integer) -> 1260
-- k80: Editor Version (integer) -> 22 (GD 2.2)
+- k5: Creator Name (string: "Jules")
+- k16: Level Revision (integer: 1)
+- k21: Level Type (integer: 2 = Local Editor Level)
+- k48: Object Count (integer: 1260)
+- k50: Binary Version (integer: 45)
+- k80: Editor Version (integer: 22 = GD 2.2)
+- k101: Editor Settings (integer: 0)
+- kI1: Camera Zoom Setting (integer: 0)
+- kI2: Camera Offset Setting (integer: 0)
+- kI3: Camera Opacity Setting (integer: 1)
 
 Outer Export Pipeline (.gdlvl):
   XML UTF-8 bytes -> Gzip compression -> URL-safe Base64 encoding -> .gdlvl file
 
 Outputs:
 - Abyssal_Kraken.gdlvl (Outer Gzip + URL-safe Base64 encoded XML Plist)
-- Abyssal_Kraken.gmd (Raw XML Plist)
+- Abyssal_Kraken.gmd (Raw XML Plist format)
 - level_string.txt (Raw uncompressed level object string)
 """
 
@@ -293,7 +297,7 @@ def build_gd_level():
 
     return level_string, len(objects)
 
-def export_gd_level(level_id, level_name, description, creator, level_string, obj_count, official_song_id=14):
+def export_gd_level(level_name, description, creator, level_string, obj_count):
     # 1. Inner Level String Encoding (Gzip -> URL-safe Base64)
     compressed_level = gzip.compress(level_string.encode('utf-8'))
     b64_level_urlsafe = base64.urlsafe_b64encode(compressed_level).decode('utf-8')
@@ -301,35 +305,39 @@ def export_gd_level(level_id, level_name, description, creator, level_string, ob
     # 2. Description Encoding (Standard Base64)
     b64_description = base64.b64encode(description.encode('utf-8')).decode('utf-8')
 
-    # 3. Build XML Plist Representation using correct GD Metadata Schema
-    # k1 = Level ID (integer)
+    # 3. Build XML Plist Representation using Working Reference Schema:
+    # Root element: <plist version="1.0" gjver="2.0">
+    # kCEK = 4
     # k2 = Level Name (string)
     # k3 = Base64-encoded description string
-    # k4 = Inner Level String (Base64 URL-safe gzipped object string)
+    # k4 = Inner Level String (URL-safe Base64 gzipped level object string)
     # k5 = Creator Name (string)
-    # k8 = Official Song ID (integer)
-    # k18 = Password (integer)
+    # k16 = Level Revision (integer: 1)
     # k21 = Level Type (integer: 2 = Local Editor Level)
-    # k45 = Custom Song ID (integer: 0 if using official song)
     # k48 = Object Count (integer)
-    # k80 = Editor Level Version (integer: 22)
+    # k50 = Binary Version (integer: 45)
+    # k80 = Editor Level Version (integer: 22 = GD 2.2)
+    # k101 = Editor Settings (integer: 0)
+    # kI1 = Camera Zoom Setting (integer: 0)
+    # kI2 = Camera Offset Setting (integer: 0)
+    # kI3 = Camera Opacity Setting (integer: 1)
     plist_xml = f"""<?xml version="1.0"?>
-<plist version="1.0" gcds="5">
+<plist version="1.0" gjver="2.0">
 <dict>
-	<k>k1</k><i>{level_id}</i>
+	<k>kCEK</k><i>4</i>
 	<k>k2</k><s>{level_name}</s>
 	<k>k3</k><s>{b64_description}</s>
 	<k>k4</k><s>{b64_level_urlsafe}</s>
 	<k>k5</k><s>{creator}</s>
-	<k>k8</k><i>{official_song_id}</i>
-	<k>k18</k><i>0</i>
+	<k>k16</k><i>1</i>
 	<k>k21</k><i>2</i>
-	<k>k45</k><i>0</i>
 	<k>k48</k><i>{obj_count}</i>
+	<k>k50</k><i>45</i>
 	<k>k80</k><i>22</i>
-	<k>kI1</k><r>1</r>
-	<k>kI2</k><r>1</r>
-	<k>kI3</k><r>1</r>
+	<k>k101</k><i>0</i>
+	<k>kI1</k><i>0</i>
+	<k>kI2</k><i>0</i>
+	<k>kI3</k><i>1</i>
 </dict>
 </plist>"""
 
@@ -344,13 +352,11 @@ def main():
     level_str, obj_count = build_gd_level()
     print(f"Generated raw level string with length: {len(level_str)} characters across {obj_count} objects.")
 
-    level_id = 0
     level_name = "Abyssal Kraken"
     description = "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!"
     creator = "Jules"
-    official_song_id = 14 # Clubstep
 
-    plist_xml, b64_outer_gdlvl = export_gd_level(level_id, level_name, description, creator, level_str, obj_count, official_song_id)
+    plist_xml, b64_outer_gdlvl = export_gd_level(level_name, description, creator, level_str, obj_count)
 
     # Output 1: Abyssal_Kraken.gdlvl (Outer Gzip + URL-safe Base64 encoded XML Plist string)
     with open("Abyssal_Kraken.gdlvl", "w", encoding="utf-8") as f:

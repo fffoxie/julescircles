@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 test_level.py
-Validation & Round-Trip Test Suite for Geometry Dash 2.2 .gdlvl and .gmd Level Files.
+Validation & Round-Trip Test Suite for Geometry Dash 2.2 .gdlvl and .gmd Level Files
+matching the verified Claude reference schema.
 """
 
 import gzip
@@ -13,6 +14,9 @@ from generate_level import export_gd_level, build_gd_level
 def parse_plist_dict(xml_str):
     root = ET.fromstring(xml_str)
     assert root.tag == "plist", f"Expected root tag 'plist', got '{root.tag}'"
+    assert root.attrib.get("gjver") == "2.0", f"Expected root attribute gjver='2.0', got '{root.attrib.get('gjver')}'"
+    print("✓ Root tag <plist version=\"1.0\" gjver=\"2.0\"> verified.")
+
     dict_elem = root.find("dict")
     assert dict_elem is not None, "Missing <dict> element in plist"
 
@@ -22,7 +26,6 @@ def parse_plist_dict(xml_str):
         if elem.tag == "k":
             current_key = elem.text
         elif current_key is not None:
-            # store tuple (tag, text)
             plist_data[current_key] = (elem.tag, elem.text)
             current_key = None
     return plist_data
@@ -32,7 +35,7 @@ def test_gdlvl_outer_decoding():
     with open("Abyssal_Kraken.gdlvl", "r", encoding="utf-8") as f:
         gdlvl_content = f.read().strip()
 
-    # Pipeline: .gdlvl file -> URL-safe Base64 decode -> Gzip decompress -> XML string
+    # Outer Pipeline: .gdlvl file -> URL-safe Base64 decode -> Gzip decompress -> XML string
     compressed_bytes = base64.urlsafe_b64decode(gdlvl_content)
     xml_bytes = gzip.decompress(compressed_bytes)
     xml_str = xml_bytes.decode('utf-8')
@@ -42,29 +45,27 @@ def test_gdlvl_outer_decoding():
     return xml_str
 
 def test_metadata_mapping(xml_str):
-    print("\n=== Step 2: Testing XML Metadata Key Mapping & Types ===")
+    print("\n=== Step 2: Testing Reference XML Metadata Key Mapping & Types ===")
     plist_data = parse_plist_dict(xml_str)
 
-    # Key 1: Level ID (integer)
-    k1_tag, k1_val = plist_data.get("k1", (None, None))
-    assert k1_tag == "i", f"k1 tag should be 'i' (integer), got '{k1_tag}'"
-    assert k1_val.isdigit(), f"k1 value should be numeric level ID, got '{k1_val}'"
-    print(f"✓ k1 (Level ID): {k1_val} (type: integer)")
+    # Key kCEK: Encryption / Format Indicator (integer)
+    kCEK_tag, kCEK_val = plist_data.get("kCEK", (None, None))
+    assert kCEK_tag == "i" and kCEK_val == "4", f"Expected kCEK 4, got '{kCEK_val}'"
+    print(f"✓ kCEK (Format Indicator): {kCEK_val} (type: integer)")
 
-    # Key 2: Level Name (string)
+    # Key k2: Level Name (string)
     k2_tag, k2_val = plist_data.get("k2", (None, None))
-    assert k2_tag == "s", f"k2 tag should be 's' (string), got '{k2_tag}'"
-    assert k2_val == "Abyssal Kraken", f"Unexpected level name: '{k2_val}'"
+    assert k2_tag == "s" and k2_val == "Abyssal Kraken", f"Unexpected level name: '{k2_val}'"
     print(f"✓ k2 (Level Name): '{k2_val}' (type: string)")
 
-    # Key 3: Description (Base64-encoded string)
+    # Key k3: Description (Base64-encoded string)
     k3_tag, k3_val = plist_data.get("k3", (None, None))
     assert k3_tag == "s", f"k3 tag should be 's' (string), got '{k3_tag}'"
     decoded_desc = base64.b64decode(k3_val).decode('utf-8')
     assert "purple octopus boss fight" in decoded_desc, f"Decoded description invalid: '{decoded_desc}'"
     print(f"✓ k3 (Base64 Description): '{decoded_desc}' (type: base64 string)")
 
-    # Key 4: Inner Level String (URL-safe Base64 gzipped object string)
+    # Key k4: Inner Level String (URL-safe Base64 gzipped object string)
     k4_tag, k4_val = plist_data.get("k4", (None, None))
     assert k4_tag == "s", f"k4 tag should be 's' (string), got '{k4_tag}'"
     compressed_level = base64.urlsafe_b64decode(k4_val)
@@ -72,35 +73,46 @@ def test_metadata_mapping(xml_str):
     assert inner_level_str.startswith("kS38,"), "Inner level string missing kS38 header!"
     print(f"✓ k4 (Inner Level String): Successfully decompressed inner level string ({len(inner_level_str)} chars)")
 
-    # Key 5: Creator Name (string)
+    # Key k5: Creator Name (string)
     k5_tag, k5_val = plist_data.get("k5", (None, None))
     assert k5_tag == "s" and k5_val == "Jules", f"Unexpected creator: '{k5_val}'"
     print(f"✓ k5 (Creator): '{k5_val}'")
 
-    # Key 8: Official Song ID (integer)
-    k8_tag, k8_val = plist_data.get("k8", (None, None))
-    assert k8_tag == "i" and k8_val == "14", f"Unexpected song ID: '{k8_val}'"
-    print(f"✓ k8 (Official Song ID): {k8_val}")
+    # Key k16: Level Revision (integer)
+    k16_tag, k16_val = plist_data.get("k16", (None, None))
+    assert k16_tag == "i" and k16_val == "1", f"Expected k16=1, got '{k16_val}'"
+    print(f"✓ k16 (Revision): {k16_val}")
 
-    # Key 21: Level Type (integer)
+    # Key k21: Level Type (integer)
     k21_tag, k21_val = plist_data.get("k21", (None, None))
     assert k21_tag == "i" and k21_val == "2", f"Expected level type 2 (local editor), got '{k21_val}'"
     print(f"✓ k21 (Level Type): {k21_val} (Local Editor Level)")
 
-    # Key 45: Custom Song ID (integer)
-    k45_tag, k45_val = plist_data.get("k45", (None, None))
-    assert k45_tag == "i" and k45_val == "0", f"Expected custom song ID 0, got '{k45_val}'"
-    print(f"✓ k45 (Custom Song ID): {k45_val}")
-
-    # Key 48: Object Count (integer)
+    # Key k48: Object Count (integer)
     k48_tag, k48_val = plist_data.get("k48", (None, None))
     assert k48_tag == "i" and int(k48_val) == 1260, f"Expected object count 1260, got '{k48_val}'"
     print(f"✓ k48 (Object Count): {k48_val}")
 
-    # Key 80: Editor Version (integer)
+    # Key k50: Binary Version (integer)
+    k50_tag, k50_val = plist_data.get("k50", (None, None))
+    assert k50_tag == "i" and k50_val == "45", f"Expected k50=45, got '{k50_val}'"
+    print(f"✓ k50 (Binary Version): {k50_val}")
+
+    # Key k80: Editor Version (integer)
     k80_tag, k80_val = plist_data.get("k80", (None, None))
     assert k80_tag == "i" and k80_val == "22", f"Expected GD 2.2 tag k80=22, got '{k80_val}'"
     print(f"✓ k80 (Editor Version): {k80_val}")
+
+    # Key k101: Editor Settings (integer)
+    k101_tag, k101_val = plist_data.get("k101", (None, None))
+    assert k101_tag == "i" and k101_val == "0", f"Expected k101=0, got '{k101_val}'"
+    print(f"✓ k101 (Settings): {k101_val}")
+
+    # Key kI1, kI2, kI3: Editor Settings (integers)
+    for ki in ["kI1", "kI2", "kI3"]:
+        tag, val = plist_data.get(ki, (None, None))
+        assert tag == "i", f"Expected integer tag for {ki}, got '{tag}'"
+        print(f"✓ {ki}: {val} (type: integer)")
 
     return inner_level_str
 
@@ -163,7 +175,7 @@ def test_inner_level_objects(inner_level_str):
 def test_roundtrip_reencoding():
     print("\n=== Step 4: Testing Round-Trip Re-Encoding & Decoding ===")
     level_str, obj_count = build_gd_level()
-    plist_xml, b64_outer = export_gd_level(0, "Abyssal Kraken", "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!", "Jules", level_str, obj_count, 14)
+    plist_xml, b64_outer = export_gd_level("Abyssal Kraken", "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!", "Jules", level_str, obj_count)
 
     # Re-decode b64_outer
     decoded_xml = gzip.decompress(base64.urlsafe_b64decode(b64_outer)).decode('utf-8')
