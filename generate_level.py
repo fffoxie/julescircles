@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
 generate_level.py
-Generates an Insane Realism Geometry Dash level (GD 2.2 format) featuring:
+Generates an Insane Realism Geometry Dash level (GD 2.2 / 2.209 format) featuring:
 - Atmospheric bioluminescent oceanic artwork & realistic slate/crystal structures
 - Dynamic transitions with camera/screen wipes and speed shifts
 - A massive, fully animated Purple Octopus Boss Fight with multi-stage tentacle attacks and ink blasts
+
 Outputs:
-- Abyssal_Kraken.gdlvl (Vanilla GD 2.2 native level export format)
-- Abyssal_Kraken.gmd (GDShare / GD export format)
+- Abyssal_Kraken.gdlvl (Vanilla GD 2.209 native level export: Base64-gzipped plist string)
+- Abyssal_Kraken_xml.gdlvl (Vanilla GD 2.209 XML Plist format)
+- Abyssal_Kraken.gmd (GDShare / GD level export format)
 - level_string.txt (Raw GD level string)
 """
 
 import gzip
 import base64
-import xml.etree.ElementTree as ET
 
 def build_gd_level():
     objects = []
@@ -281,33 +282,35 @@ def build_gd_level():
     return level_string, len(objects)
 
 def export_gd_level(level_name, description, creator, level_string, obj_count):
-    # Compress level string using gzip and URL-safe base64 (GD requirement)
-    compressed = gzip.compress(level_string.encode('utf-8'))
-    b64_urlsafe = base64.urlsafe_b64encode(compressed).decode('utf-8')
+    # Compress level string using gzip and URL-safe base64
+    compressed_level = gzip.compress(level_string.encode('utf-8'))
+    b64_level_urlsafe = base64.urlsafe_b64encode(compressed_level).decode('utf-8')
 
-    # Build XML plist representation for GD 2.2 native export (.gdlvl / .gmd)
-    # k80 = 22 (GD 2.2 version tag), k45 = object count
+    # Build XML plist representation for GD 2.2
     plist_xml = f"""<?xml version="1.0"?>
 <plist version="1.0" gcds="5">
 <dict>
 	<k>k0</k><i>0</i>
 	<k>k1</k><s>{level_name}</s>
 	<k>k2</k><s>{description}</s>
-	<k>k3</k><s>{b64_urlsafe}</s>
-	<k>k4</k><s>{b64_urlsafe}</s>
+	<k>k4</k><s>{b64_level_urlsafe}</s>
 	<k>k5</k><s>{creator}</s>
-	<k>k8</k><i>10</i>
+	<k>k8</k><i>1</i>
 	<k>k18</k><i>0</i>
-	<k>k21</k><i>2</i>
+	<k>k21</k><i>0</i>
 	<k>k45</k><i>{obj_count}</i>
 	<k>k80</k><i>22</i>
-	<k>kI1</k><r>100</r>
-	<k>kI2</k><r>100</r>
-	<k>kI3</k><r>100</r>
+	<k>kI1</k><r>1</r>
+	<k>kI2</k><r>1</r>
+	<k>kI3</k><r>1</r>
 </dict>
 </plist>"""
 
-    return plist_xml, b64_urlsafe
+    # Compressed plist for vanilla GD 2.209 level export file (.gdlvl)
+    compressed_plist = gzip.compress(plist_xml.encode('utf-8'))
+    b64_plist_urlsafe = base64.urlsafe_b64encode(compressed_plist).decode('utf-8')
+
+    return plist_xml, b64_plist_urlsafe
 
 def main():
     print("Generating Insane Realism GD 2.2 Level with Purple Octopus Boss Fight...")
@@ -318,24 +321,27 @@ def main():
     description = "Insane realistic underwater level with dynamic transitions and a purple octopus boss fight!"
     creator = "Jules"
 
-    gmd_xml, b64_urlsafe = export_gd_level(level_name, description, creator, level_str, obj_count)
+    plist_xml, b64_plist = export_gd_level(level_name, description, creator, level_str, obj_count)
 
-    # Export .gdlvl (Vanilla Geometry Dash 2.209 level export format)
-    gdlvl_filename = "Abyssal_Kraken.gdlvl"
-    with open(gdlvl_filename, "w", encoding="utf-8") as f:
-        f.write(gmd_xml)
-    print(f"Successfully saved {gdlvl_filename}!")
+    # Output 1: Abyssal_Kraken.gdlvl (Vanilla GD 2.209 native export: Base64 Gzipped Plist)
+    with open("Abyssal_Kraken.gdlvl", "w", encoding="utf-8") as f:
+        f.write(b64_plist)
+    print("Successfully saved Abyssal_Kraken.gdlvl (native GD 2.209 base64-gzip export format)!")
 
-    # Export .gmd (GDShare / level tools format)
-    gmd_filename = "Abyssal_Kraken.gmd"
-    with open(gmd_filename, "w", encoding="utf-8") as f:
-        f.write(gmd_xml)
-    print(f"Successfully saved {gmd_filename}!")
+    # Output 2: Abyssal_Kraken_xml.gdlvl (Vanilla GD 2.209 raw XML Plist export format)
+    with open("Abyssal_Kraken_xml.gdlvl", "w", encoding="utf-8") as f:
+        f.write(plist_xml)
+    print("Successfully saved Abyssal_Kraken_xml.gdlvl (raw XML Plist export format)!")
 
-    raw_filename = "level_string.txt"
-    with open(raw_filename, "w", encoding="utf-8") as f:
+    # Output 3: Abyssal_Kraken.gmd (GDShare / GD level format)
+    with open("Abyssal_Kraken.gmd", "w", encoding="utf-8") as f:
+        f.write(plist_xml)
+    print("Successfully saved Abyssal_Kraken.gmd!")
+
+    # Output 4: level_string.txt (Raw level object string)
+    with open("level_string.txt", "w", encoding="utf-8") as f:
         f.write(level_str)
-    print(f"Successfully saved {raw_filename}!")
+    print("Successfully saved level_string.txt!")
 
 if __name__ == "__main__":
     main()

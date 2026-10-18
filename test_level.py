@@ -9,16 +9,9 @@ import base64
 import xml.etree.ElementTree as ET
 import sys
 
-def verify_file(filepath):
-    print(f"\n=== Testing {filepath} ===")
-
-    # 1. Parse XML
-    tree = ET.parse(filepath)
-    root = tree.getroot()
+def parse_plist_data(xml_str):
+    root = ET.fromstring(xml_str)
     assert root.tag == "plist", f"Expected root tag 'plist', got '{root.tag}'"
-    print("✓ Valid XML plist root element.")
-
-    # 2. Extract key-value pairs from plist dict
     dict_elem = root.find("dict")
     assert dict_elem is not None, "Missing <dict> element in plist"
 
@@ -30,23 +23,38 @@ def verify_file(filepath):
         elif current_key is not None:
             plist_data[current_key] = elem.text
             current_key = None
+    return plist_data
 
+def verify_level_data(filepath, is_base64_gzipped_plist=False):
+    print(f"\n=== Testing {filepath} (is_compressed_plist={is_base64_gzipped_plist}) ===")
+
+    with open(filepath, "r", encoding="utf-8") as f:
+        file_content = f.read().strip()
+
+    if is_base64_gzipped_plist:
+        # Decode URL-safe base64 and decompress gzip plist XML
+        raw_xml_bytes = gzip.decompress(base64.urlsafe_b64decode(file_content))
+        xml_str = raw_xml_bytes.decode('utf-8')
+    else:
+        xml_str = file_content
+
+    # 1. Parse XML Plist
+    plist_data = parse_plist_data(xml_str)
     print(f"✓ Parsed plist keys: {list(plist_data.keys())}")
     assert plist_data.get("k1") == "Abyssal Kraken", f"Unexpected level name: {plist_data.get('k1')}"
     assert plist_data.get("k80") == "22", f"Expected GD 2.2 tag k80=22, got {plist_data.get('k80')}"
     assert int(plist_data.get("k45", 0)) > 1000, f"Expected k45 > 1000 object count, got {plist_data.get('k45')}"
     print(f"✓ Level Name (k1): {plist_data.get('k1')}, Version (k80): {plist_data.get('k80')}, Object Count (k45): {plist_data.get('k45')}")
 
-    # 3. Decode URL-safe base64 gzip level string from k4
+    # 2. Decode URL-safe base64 gzip level string from k4
     k4_b64 = plist_data.get("k4")
     assert k4_b64 is not None and len(k4_b64) > 0, "k4 level string is empty!"
 
-    # Test URL-safe base64 decoding
     compressed_bytes = base64.urlsafe_b64decode(k4_b64)
     decompressed_str = gzip.decompress(compressed_bytes).decode('utf-8')
     print(f"✓ Successfully decoded URL-safe base64 & decompressed k4 level string ({len(decompressed_str)} chars).")
 
-    # 4. Verify level header and objects
+    # 3. Verify level header and objects
     parts = decompressed_str.split(";")
     header = parts[0]
     objects = parts[1:-1] # excluding header and trailing empty item
@@ -56,7 +64,7 @@ def verify_file(filepath):
     print(f"✓ Total Objects Count: {len(objects)}")
     assert len(objects) >= 300, f"Object count too low ({len(objects)}), expected rich level design."
 
-    # 5. Parse objects and verify object types & groups
+    # 4. Parse objects and verify object types & groups
     obj_type_counts = {}
     groups_found = set()
 
@@ -106,9 +114,10 @@ def verify_file(filepath):
     print("✓ Game mode portals (Cube, Ship, Wave, Spider) verified.")
 
 def main():
-    verify_file("Abyssal_Kraken.gdlvl")
-    verify_file("Abyssal_Kraken.gmd")
-    print("\n🎉 ALL LEVEL VERIFICATION TESTS PASSED SUCCESSFULLY FOR BOTH .gdlvl AND .gmd!")
+    verify_level_data("Abyssal_Kraken.gdlvl", is_base64_gzipped_plist=True)
+    verify_level_data("Abyssal_Kraken_xml.gdlvl", is_base64_gzipped_plist=False)
+    verify_level_data("Abyssal_Kraken.gmd", is_base64_gzipped_plist=False)
+    print("\n🎉 ALL LEVEL VERIFICATION TESTS PASSED SUCCESSFULLY FOR ALL LEVEL FILES!")
 
 if __name__ == "__main__":
     main()
