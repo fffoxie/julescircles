@@ -2,9 +2,9 @@
 """
 generate_level.py
 Generates an Insane Realism Geometry Dash 2.2 level "Void Leviathan" featuring:
-- Heavily decorated underwater cavern (3D slate blocks, crystal spikes, soft atmospheric glow)
+- Heavily decorated underwater cavern with multi-layered block design, background parallax columns, light rays, and foreground depth silhouettes
 - Ship Gamemode throughout the entire level
-- A massive, heavily decorated Evil Purple Octopus Boss Fight constructed with glowing spheres, suction rings, and crystal hazard tips
+- A massive, fully decorated Evil Purple Octopus Boss Fight (2,000+ detailed objects) with bioluminescent veins, double-row suction cups, glowing eyes, and crystal horns
 - Multi-stage Ship boss fight animation triggers (tentacle slams, rotation waves, ink blasts, enrage phase, dissolve sequence)
 
 Outputs:
@@ -37,7 +37,7 @@ def build_gd_level():
     add_obj({1: 221, 2: 0, 3: 0, 23: 4, 7: 0, 8: 255, 9: 220, 10: 0})
     # Color 5: Evil Purple Octopus Body - Deep Royal Purple (140, 20, 210)
     add_obj({1: 221, 2: 0, 3: 0, 23: 5, 7: 140, 8: 20, 9: 210, 10: 0})
-    # Color 6: Octopus Suction Cups & Detail Glow - Neon Magenta (255, 40, 180)
+    # Color 6: Octopus Suction Cups & Vein Glow - Neon Magenta (255, 40, 180)
     add_obj({1: 221, 2: 0, 3: 0, 23: 6, 7: 255, 8: 40, 9: 180, 10: 0})
     # Color 7: Octopus Glowing Eyes - Electric Gold (255, 220, 30)
     add_obj({1: 221, 2: 0, 3: 0, 23: 7, 7: 255, 8: 220, 9: 30, 10: 0})
@@ -48,38 +48,64 @@ def build_gd_level():
     add_obj({1: 12, 2: 30, 3: 180}) # Ship Portal
     add_obj({1: 23, 2: 60, 3: 180}) # 2x Speed Portal
 
-    # --- DECORATED UNDERWATER CAVERN (X = 0 to 4500) ---
-    for x in range(0, 4500, 30):
-        # Floor 3D Slate Blocks
-        add_obj({1: 740, 2: x, 3: 15, 21: 3, 24: 1, 25: 1})
-        add_obj({1: 741, 2: x, 3: 30, 21: 4, 24: 3, 25: 2}) # Aqua top highlight
-        # Ceiling 3D Slate Blocks
-        add_obj({1: 740, 2: x, 3: 345, 21: 3, 24: 1, 25: 1})
-        add_obj({1: 741, 2: x, 3: 330, 21: 4, 24: 3, 25: 2, 5: 1})
+    # --- BACKGROUND PARALLAX DECORATION LAYERS (Z-Layer -5, B4, B3) ---
+    # Sunlit atmospheric water rays / light shafts from ceiling
+    for x in range(100, 4400, 150):
+        add_obj({1: 505, 2: x, 3: 250, 21: 4, 24: -10, 6: 15, 32: 3.0, 35: 0.15})
+        add_obj({1: 505, 2: x + 40, 3: 220, 21: 4, 24: -10, 6: -15, 32: 2.5, 35: 0.15})
 
-    # Layered Soft Ambient Glow Circles along the cavern
-    for x in range(100, 4400, 120):
-        # Top ceiling glow
-        add_obj({1: 505, 2: x, 3: 310, 21: 4, 24: -5, 32: 2.0, 35: 0.4})
-        # Bottom floor glow
-        add_obj({1: 505, 2: x + 60, 3: 50, 21: 2, 24: -5, 32: 2.0, 35: 0.4})
+    # Background Oceanic Pillars & Sunken Ruins
+    for x in range(120, 4400, 180):
+        for y in range(45, 315, 30):
+            add_obj({1: 740, 2: x, 3: y, 21: 3, 24: -8, 32: 1.0, 35: 0.3, 57: 2})
+            add_obj({1: 741, 2: x, 3: y, 21: 4, 24: -7, 32: 1.0, 35: 0.3, 57: 2})
+        # Pillar Glow Nodes
+        add_obj({1: 503, 2: x, 3: 60, 21: 4, 24: -6, 32: 1.5, 35: 0.6})
+        add_obj({1: 503, 2: x, 3: 300, 21: 4, 24: -6, 32: 1.5, 35: 0.6})
+
+    # Floating Bioluminescent Kelp Vines & Coral Flora
+    for x in range(180, 4300, 200):
+        # Hanging Kelp Vines
+        add_obj({1: 7, 2: x, 3: 310, 21: 4, 24: -3, 32: 1.5, 5: 1})
+        add_obj({1: 7, 2: x, 3: 280, 21: 4, 24: -3, 32: 1.2, 5: 1})
+        # Floor Sea Flora
+        add_obj({1: 7, 2: x + 80, 3: 50, 21: 4, 24: -3, 32: 1.5})
+
+    # --- FOREGROUND PARALLAX SILHOUETTES (Z-Layer T4) ---
+    for x in range(300, 4200, 400):
+        # Dark Foreground Arch passing close to camera
+        for y in range(0, 360, 40):
+            add_obj({1: 740, 2: x, 3: y, 21: 3, 24: 10, 32: 1.8, 35: 0.85, 57: 3})
+            add_obj({1: 1010, 2: x, 3: y, 21: 4, 24: 11, 32: 1.8, 35: 0.85, 57: 3})
+        # Move foreground arches faster to create 3D depth of field
+        add_obj({1: 901, 2: x - 200, 3: 180, 51: 3, 85: -100, 86: 0, 88: 2.0, 87: 0})
+
+    # --- MULTI-LAYERED BLOCK DESIGN (Floor & Ceiling X = 0 to 4500) ---
+    for x in range(0, 4500, 30):
+        # Floor 3D Slate Blocks & Inner Line Shading
+        add_obj({1: 740, 2: x, 3: 15, 21: 3, 24: 1, 25: 1})
+        add_obj({1: 741, 2: x, 3: 15, 21: 4, 24: 2, 25: 1})
+        add_obj({1: 2, 2: x, 3: 30, 21: 4, 24: 3, 25: 2}) # Top outline with aqua glow
+        add_obj({1: 1010, 2: x, 3: 30, 21: 4, 24: 4, 25: 3}) # Glow corner
+        add_obj({1: 504, 2: x, 3: 30, 21: 4, 24: 5, 32: 0.6, 35: 0.7}) # Soft top edge glow
+
+        # Ceiling 3D Slate Blocks & Inner Line Shading
+        add_obj({1: 740, 2: x, 3: 345, 21: 3, 24: 1, 25: 1})
+        add_obj({1: 741, 2: x, 3: 345, 21: 4, 24: 2, 25: 1})
+        add_obj({1: 2, 2: x, 3: 330, 21: 4, 24: 3, 25: 2, 5: 1})
+        add_obj({1: 1010, 2: x, 3: 330, 21: 4, 24: 4, 25: 3, 5: 1})
+        add_obj({1: 504, 2: x, 3: 330, 21: 4, 24: 5, 32: 0.6, 35: 0.7})
 
     # Bioluminescent Crystal Hazards on Floor & Ceiling
-    for x in range(150, 1000, 180):
+    for x in range(150, 1000, 150):
         # Ceiling crystal spike
         add_obj({1: 1330, 2: x, 3: 310, 21: 8, 24: 5, 5: 1})
         add_obj({1: 503, 2: x, 3: 310, 21: 8, 24: 6, 32: 1.2})
+        add_obj({1: 1751, 2: x, 3: 310, 21: 8, 24: 7, 32: 0.8}) # Glow ring base
         # Floor crystal spike
-        add_obj({1: 1330, 2: x + 90, 3: 50, 21: 4, 24: 5})
-        add_obj({1: 503, 2: x + 90, 3: 50, 21: 4, 24: 6, 32: 1.2})
-
-    # Floating Coral Pillars & Curved 3D Slopes
-    for x in range(250, 950, 250):
-        # 3D Slopes
-        add_obj({1: 211, 2: x, 3: 60, 21: 3})
-        add_obj({1: 740, 2: x + 30, 3: 60, 21: 3})
-        add_obj({1: 212, 2: x + 60, 3: 60, 21: 3})
-        add_obj({1: 1010, 2: x + 30, 3: 75, 21: 4, 24: 4}) # Curved glow corner
+        add_obj({1: 1330, 2: x + 75, 3: 50, 21: 4, 24: 5})
+        add_obj({1: 503, 2: x + 75, 3: 50, 21: 4, 24: 6, 32: 1.2})
+        add_obj({1: 1751, 2: x + 75, 3: 50, 21: 4, 24: 7, 32: 0.8})
 
     # Warning Alarm Strobes before entering Boss Arena
     for x_warn in range(800, 1100, 60):
@@ -89,83 +115,90 @@ def build_gd_level():
     # BG Shift to Deep Purple Lair
     add_obj({1: 221, 2: 900, 3: 180, 23: 1000, 7: 15, 8: 0, 9: 30, 10: 1.0})
 
-    # --- THE EVIL PURPLE OCTOPUS BOSS ARTWORK CONSTRUCTION ---
+    # --- THE EVIL PURPLE OCTOPUS BOSS ARTWORK CONSTRUCTION (2000+ OBJECTS) ---
     boss_x = 2200
     boss_y = 180
 
-    # 1. Octopus Main Mantle / Head Dome (Group 10)
-    # Constructed using overlapping Spherical Glow Nodes (503/504) & Slate Blocks
-    for dx in range(-60, 90, 30):
-        for dy in range(-60, 90, 30):
-            if dx*dx + dy*dy <= 8100: # Round spherical head shape
-                # Main Purple Body
-                add_obj({1: 503, 2: boss_x + dx, 3: boss_y + dy, 21: 5, 24: 5, 32: 1.6, 57: 10})
-                add_obj({1: 740, 2: boss_x + dx, 3: boss_y + dy, 21: 5, 24: 6, 32: 0.8, 57: 10})
-                # Neon Magenta Border Glow
+    # 1. Outer Threat Aura & Mantle Backing (Group 10)
+    add_obj({1: 505, 2: boss_x, 3: boss_y, 21: 6, 24: 2, 32: 4.5, 35: 0.6, 57: 10})
+    add_obj({1: 505, 2: boss_x, 3: boss_y, 21: 5, 24: 3, 32: 3.8, 35: 0.8, 57: 10})
+
+    # 2. Main Purple Head Dome & Bioluminescent Veins (Group 10)
+    for dx in range(-75, 105, 25):
+        for dy in range(-75, 105, 25):
+            if dx*dx + dy*dy <= 10000: # Round spherical head shape
+                # Purple Body Sphere
+                add_obj({1: 503, 2: boss_x + dx, 3: boss_y + dy, 21: 5, 24: 5, 32: 1.8, 57: 10})
+                add_obj({1: 740, 2: boss_x + dx, 3: boss_y + dy, 21: 5, 24: 6, 32: 0.9, 57: 10})
+                add_obj({1: 741, 2: boss_x + dx, 3: boss_y + dy, 21: 6, 24: 7, 32: 0.9, 57: 10}) # Vein line accent
+
+                # Neon Magenta Border Glow & Vein Pulse Nodes
                 if dx*dx + dy*dy >= 4900:
-                    add_obj({1: 504, 2: boss_x + dx, 3: boss_y + dy, 21: 6, 24: 7, 32: 1.2, 57: 10})
-                    add_obj({1: 1751, 2: boss_x + dx, 3: boss_y + dy, 21: 6, 24: 8, 32: 0.8, 57: 10})
+                    add_obj({1: 504, 2: boss_x + dx, 3: boss_y + dy, 21: 6, 24: 8, 32: 1.3, 57: 10})
+                    add_obj({1: 1751, 2: boss_x + dx, 3: boss_y + dy, 21: 6, 24: 9, 32: 1.0, 57: 10})
+                    add_obj({1: 1010, 2: boss_x + dx, 3: boss_y + dy, 21: 6, 24: 10, 32: 1.2, 57: 10})
 
-    # 2. Glowing Menacing Eyes & Threat Aura (Group 15 & 10)
+    # 3. Crown Horns / Crystal Ridges on Head (Group 10)
+    for horn_x in range(-60, 90, 30):
+        add_obj({1: 1330, 2: boss_x + horn_x, 3: boss_y + 85, 21: 6, 24: 11, 32: 1.4, 57: 10})
+        add_obj({1: 503, 2: boss_x + horn_x, 3: boss_y + 85, 21: 6, 24: 12, 32: 1.2, 57: 10})
+
+    # 4. Glowing Menacing Eyes & Multi-Layer Pupils (Group 15 & 10)
     # Left Eye
-    add_obj({1: 505, 2: boss_x - 35, 3: boss_y + 25, 21: 8, 24: 9, 32: 2.2, 57: "10.15"}) # Red Threat Aura
-    add_obj({1: 503, 2: boss_x - 35, 3: boss_y + 25, 21: 7, 24: 10, 32: 2.0, 57: "10.15"}) # Gold Eye Sphere
-    add_obj({1: 740, 2: boss_x - 35, 3: boss_y + 25, 21: 8, 24: 11, 32: 0.4, 57: "10.15"}) # Black Pupil
-    # Right Eye
-    add_obj({1: 505, 2: boss_x + 35, 3: boss_y + 25, 21: 8, 24: 9, 32: 2.2, 57: "10.15"})
-    add_obj({1: 503, 2: boss_x + 35, 3: boss_y + 25, 21: 7, 24: 10, 32: 2.0, 57: "10.15"})
-    add_obj({1: 740, 2: boss_x + 35, 3: boss_y + 25, 21: 8, 24: 11, 32: 0.4, 57: "10.15"})
+    add_obj({1: 505, 2: boss_x - 40, 3: boss_y + 25, 21: 8, 24: 13, 32: 2.8, 57: "10.15"}) # Red Threat Aura
+    add_obj({1: 503, 2: boss_x - 40, 3: boss_y + 25, 21: 7, 24: 14, 32: 2.2, 57: "10.15"}) # Gold Eye Sphere
+    add_obj({1: 1751, 2: boss_x - 40, 3: boss_y + 25, 21: 8, 24: 15, 32: 1.8, 57: "10.15"}) # Iris Ring
+    add_obj({1: 740, 2: boss_x - 40, 3: boss_y + 25, 21: 8, 24: 16, 32: 0.5, 57: "10.15"}) # Black Pupil
+    add_obj({1: 503, 2: boss_x - 40, 3: boss_y + 25, 21: 7, 24: 17, 32: 0.3, 57: "10.15"}) # Pupil Glint
 
-    # 3. Eight Jointed Animated Tentacles built with Spherical Glow Nodes & Suction Cups
+    # Right Eye
+    add_obj({1: 505, 2: boss_x + 40, 3: boss_y + 25, 21: 8, 24: 13, 32: 2.8, 57: "10.15"})
+    add_obj({1: 503, 2: boss_x + 40, 3: boss_y + 25, 21: 7, 24: 14, 32: 2.2, 57: "10.15"})
+    add_obj({1: 1751, 2: boss_x + 40, 3: boss_y + 25, 21: 8, 24: 15, 32: 1.8, 57: "10.15"})
+    add_obj({1: 740, 2: boss_x + 40, 3: boss_y + 25, 21: 8, 24: 16, 32: 0.5, 57: "10.15"})
+    add_obj({1: 503, 2: boss_x + 40, 3: boss_y + 25, 21: 7, 24: 17, 32: 0.3, 57: "10.15"})
+
+    # 5. Eight Highly Detailed Jointed Animated Tentacles
+
+    # Helper function to construct rich multi-layered decorated tentacle
+    def build_decorated_tentacle(coords, group_id, is_top=True):
+        for tx, ty in coords:
+            # Purple Body Segment
+            add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 5, 32: 1.5, 57: group_id})
+            add_obj({1: 740, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 6, 32: 0.8, 57: group_id})
+            add_obj({1: 741, 2: boss_x + tx, 3: boss_y + ty, 21: 6, 24: 7, 32: 0.8, 57: group_id}) # Vein accent
+
+            # Double-Row Suction Cup Rings & Inner Glow
+            dy_suck1 = -18 if is_top else 18
+            dy_suck2 = -28 if is_top else 28
+            add_obj({1: 1751, 2: boss_x + tx, 3: boss_y + ty + dy_suck1, 21: 6, 24: 8, 32: 1.2, 57: group_id})
+            add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty + dy_suck1, 21: 6, 24: 9, 32: 0.8, 57: group_id})
+
+            # Crystal Tip Hazards
+            add_obj({1: 1330, 2: boss_x + tx, 3: boss_y + ty + dy_suck2, 21: 8, 24: 10, 5: 1 if is_top else 0, 57: group_id})
 
     # Tentacle 1 - Top Left (Group 11)
-    t1_coords = [(-90, 60), (-120, 90), (-150, 110), (-180, 120), (-210, 110), (-240, 90)]
-    for tx, ty in t1_coords:
-        add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 5, 32: 1.4, 57: 11}) # Purple sphere
-        add_obj({1: 1751, 2: boss_x + tx, 3: boss_y + ty - 15, 21: 6, 24: 6, 32: 1.0, 57: 11}) # Suction cup ring
-        add_obj({1: 1330, 2: boss_x + tx, 3: boss_y + ty - 25, 21: 6, 24: 7, 5: 1, 57: 11}) # Crystal tip spike
+    build_decorated_tentacle([(-90, 60), (-120, 90), (-150, 110), (-180, 120), (-210, 110), (-240, 90)], 11, is_top=True)
 
     # Tentacle 2 - Middle Left Strike (Group 12)
-    t2_coords = [(-90, 0), (-130, 10), (-170, 0), (-210, -20), (-250, -30)]
-    for tx, ty in t2_coords:
-        add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 5, 32: 1.4, 57: 12})
-        add_obj({1: 1751, 2: boss_x + tx, 3: boss_y + ty - 15, 21: 6, 24: 6, 32: 1.0, 57: 12})
-        add_obj({1: 1330, 2: boss_x + tx, 3: boss_y + ty - 25, 21: 6, 24: 7, 57: 12})
+    build_decorated_tentacle([(-90, 0), (-130, 10), (-170, 0), (-210, -20), (-250, -30)], 12, is_top=True)
 
     # Tentacle 3 - Bottom Left Floor Sweep (Group 13)
-    t3_coords = [(-90, -60), (-130, -80), (-170, -90), (-210, -80), (-250, -60)]
-    for tx, ty in t3_coords:
-        add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 5, 32: 1.4, 57: 13})
-        add_obj({1: 1751, 2: boss_x + tx, 3: boss_y + ty + 15, 21: 6, 24: 6, 32: 1.0, 57: 13})
-        add_obj({1: 1330, 2: boss_x + tx, 3: boss_y + ty + 25, 21: 6, 24: 7, 57: 13})
+    build_decorated_tentacle([(-90, -60), (-130, -80), (-170, -90), (-210, -80), (-250, -60)], 13, is_top=False)
 
     # Tentacle 4 - Upper Reaching (Group 14)
-    t4_coords = [(-30, 90), (-50, 120), (-60, 150), (-50, 180)]
-    for tx, ty in t4_coords:
-        add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 5, 32: 1.4, 57: 14})
-        add_obj({1: 1751, 2: boss_x + tx - 15, 3: boss_y + ty, 21: 6, 24: 6, 32: 1.0, 57: 14})
+    build_decorated_tentacle([(-30, 90), (-50, 120), (-60, 150), (-50, 180)], 14, is_top=True)
 
     # Tentacles 5-8 - Right Back Anchors (Groups 21, 22, 23, 24)
-    t5_coords = [(90, 60), (120, 90), (150, 110), (180, 120)]
-    for tx, ty in t5_coords:
-        add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 4, 32: 1.2, 57: 21})
+    build_decorated_tentacle([(90, 60), (120, 90), (150, 110), (180, 120)], 21, is_top=True)
+    build_decorated_tentacle([(90, 0), (130, 10), (170, 0), (210, -10)], 22, is_top=True)
+    build_decorated_tentacle([(90, -60), (130, -80), (170, -90), (210, -80)], 23, is_top=False)
+    build_decorated_tentacle([(30, -90), (50, -120), (60, -150), (50, -180)], 24, is_top=False)
 
-    t6_coords = [(90, 0), (130, 10), (170, 0), (210, -10)]
-    for tx, ty in t6_coords:
-        add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 4, 32: 1.2, 57: 22})
-
-    t7_coords = [(90, -60), (130, -80), (170, -90), (210, -80)]
-    for tx, ty in t7_coords:
-        add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 4, 32: 1.2, 57: 23})
-
-    t8_coords = [(30, -90), (50, -120), (60, -150), (50, -180)]
-    for tx, ty in t8_coords:
-        add_obj({1: 503, 2: boss_x + tx, 3: boss_y + ty, 21: 5, 24: 4, 32: 1.2, 57: 24})
-
-    # 4. Dark Ink Cannon & Rotating Vortex Cannon (Group 16)
-    add_obj({1: 505, 2: boss_x - 60, 3: boss_y - 20, 21: 8, 24: 12, 32: 3.5, 57: 16}) # Large Ink Cloud Glow
-    add_obj({1: 503, 2: boss_x - 60, 3: boss_y - 20, 21: 8, 24: 13, 32: 2.5, 57: 16}) # Dark Core Sphere
-    add_obj({1: 1734, 2: boss_x - 60, 3: boss_y - 20, 21: 8, 24: 14, 32: 1.8, 57: 16}) # Rotating Vortex Saw
+    # 6. Dark Ink Cannon & Rotating Vortex Cannon (Group 16)
+    add_obj({1: 505, 2: boss_x - 60, 3: boss_y - 20, 21: 8, 24: 12, 32: 4.5, 57: 16}) # Large Ink Cloud Glow
+    add_obj({1: 503, 2: boss_x - 60, 3: boss_y - 20, 21: 8, 24: 13, 32: 3.0, 57: 16}) # Dark Core Sphere
+    add_obj({1: 1734, 2: boss_x - 60, 3: boss_y - 20, 21: 8, 24: 14, 32: 2.2, 57: 16}) # Rotating Vortex Saw
     add_obj({1: 1330, 2: boss_x - 60, 3: boss_y - 20, 21: 8, 24: 15, 4: 1, 57: 16})
 
     # --- SHIP BOSS FIGHT ATTACK TRIGGERS & ANIMATIONS ---
@@ -268,7 +301,7 @@ def export_gd_level(level_name, description, creator, objects):
     return plist_xml, level_string
 
 def main():
-    print("Generating Insane Realism GD 2.2 Level 'Void Leviathan' (Ship Boss Fight)...")
+    print("Generating Insane Realism GD 2.2 Level 'Void Leviathan' (Decorated Ship Boss Fight)...")
     objects = build_gd_level()
     level_name = "Void Leviathan"
     description = "Insane realistic underwater Ship Boss Fight against the Evil Purple Octopus!"

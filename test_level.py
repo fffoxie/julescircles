@@ -111,7 +111,7 @@ def test_metadata_mapping(xml_str, expected_obj_count):
     return inner_level_str
 
 def test_inner_level_objects(inner_level_str, expected_obj_count):
-    print("\n=== Step 3: Testing Inner Level Objects & Decorated Boss Fight ===")
+    print("\n=== Step 3: Testing Inner Level Objects & Heavily Decorated Boss Fight ===")
     parts = inner_level_str.split(";")
     header = parts[0]
     objects = parts[1:-1] # excluding header and trailing empty item
@@ -120,6 +120,7 @@ def test_inner_level_objects(inner_level_str, expected_obj_count):
     print(f"✓ Header verified: {header[:40]}...")
     print(f"✓ Total Objects Count: {len(objects)}")
     assert len(objects) == expected_obj_count, f"Expected {expected_obj_count} decorated objects, got {len(objects)}"
+    assert len(objects) > 2000, f"Expected heavily decorated level (>2000 objects), got {len(objects)}"
 
     obj_type_counts = {}
     groups_found = set()
@@ -141,13 +142,16 @@ def test_inner_level_objects(inner_level_str, expected_obj_count):
             for g in grp_val.split("."):
                 groups_found.add(g)
 
-    # Check Decorated Objects (3D slate blocks 740/741, crystal spikes 1330, spherical glow 503/504/505, suction rings 1751, vortex saw 1734)
+    # Check Decorated Objects (3D slate blocks 740/741, crystal spikes 1330, spherical glow 503/504/505, kelp flora 7, suction rings 1751, vortex saw 1734)
     assert "740" in obj_type_counts, "3D Slate Block (740) missing!"
+    assert "741" in obj_type_counts, "Slate Block Detail (741) missing!"
     assert "1330" in obj_type_counts, "Crystal Spike Hazard (1330) missing!"
     assert "503" in obj_type_counts, "Spherical Glow Orb (503) missing!"
+    assert "505" in obj_type_counts, "Atmospheric Light Shaft Glow (505) missing!"
+    assert "7" in obj_type_counts, "Kelp Flora (7) missing!"
     assert "1751" in obj_type_counts, "Suction Cup Ring (1751) missing!"
     assert "1734" in obj_type_counts, "Vortex Saw Blade (1734) missing!"
-    print("✓ All decorated blocks (3D slate blocks, crystal spikes, spherical glow orbs, suction cup rings, vortex saw) verified.")
+    print("✓ All decorated elements (3D slate blocks, crystal spikes, spherical glow orbs, light shafts, kelp flora, suction cup rings, vortex saw) verified.")
 
     # Check Color Triggers (ID 221)
     assert obj_type_counts.get("221", 0) >= 8, f"Expected at least 8 Color Triggers, found {obj_type_counts.get('221')}"
@@ -177,7 +181,7 @@ def main():
     xml_str = test_gdlvl_xml_structure()
     inner_str = test_metadata_mapping(xml_str, expected_obj_count)
     test_inner_level_objects(inner_str, expected_obj_count)
-    print("\n🎉 ALL GD 2.2 DECORATED SHIP BOSS FIGHT LEVEL TESTS PASSED 100% SUCCESSFULLY!")
+    print("\n🎉 ALL GD 2.2 HEAVILY DECORATED SHIP BOSS FIGHT LEVEL TESTS PASSED 100% SUCCESSFULLY!")
 
 if __name__ == "__main__":
     main()
